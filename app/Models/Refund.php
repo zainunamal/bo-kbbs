@@ -17,6 +17,5 @@ class Refund extends Model
      * @var array
      */
     protected $fillable = [
-
     ];
 }

@@ -171,7 +171,6 @@ class RefundController extends Controller
             $baseurl . '/api/refund',
             $data
         );
-
         // dd($response->json());
         $res = $response['RC'];
 

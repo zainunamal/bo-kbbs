@@ -28,7 +28,6 @@ class MerchantClientController extends Controller
 
         return response()->json(['merchants' => $merchants]);
 
-
     }
 
     public function apiStore(Request $request)

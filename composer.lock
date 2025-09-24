@@ -9477,7 +9477,11 @@
             "homepage": "https://github.com/sebastianbergmann/type",
             "support": {
                 "issues": "https://github.com/sebastianbergmann/type/issues",
+<<<<<<< HEAD
                 "source": "https://github.com/sebastianbergmann/type/tree/1.1.5"
+=======
+                "source": "https://github.com/sebastianbergmann/type/tree/1.1.4"
+>>>>>>> 5b485d06313e9b493d8f8eec43602f3db1a319bb
             },
             "funding": [
                 {
@@ -9485,7 +9489,11 @@
                     "type": "github"
                 }
             ],
+<<<<<<< HEAD
             "time": "2024-03-01T14:04:07+00:00"
+=======
+            "time": "2020-11-30T07:25:11+00:00"
+>>>>>>> 5b485d06313e9b493d8f8eec43602f3db1a319bb
         },
         {
             "name": "sebastian/version",

@@ -47,7 +47,6 @@ class PermissionController extends Controller
     {
         return view('permissions.create');
     }
-
     /**
      * Store a newly created resource in storage.
      *
