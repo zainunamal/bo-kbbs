@@ -1,0 +1,10 @@
+[16-Feb-2023 01:56:47 UTC] PHP Warning:  Uncaught ErrorException: require(/var/www-newapp/vendor/composer/../iso/c8583.php): failed to open stream: No such file or directory in /var/www-newapp/vendor/composer/autoload_real.php:71
+Stack trace:
+#0 /var/www-newapp/vendor/composer/autoload_real.php(71): Composer\Util\ErrorHandler::handle(2, 'require(/var/ww...', '/var/www-newapp...', 71, Array)
+#1 /var/www-newapp/vendor/composer/autoload_real.php(71): require()
+#2 /var/www-newapp/vendor/composer/autoload_real.php(61): composerRequire659e89367e730dfc387f0ae7b89f60b7('9ccfd3995a2045a...', '/var/www-newapp...')
+#3 /var/www-newapp/vendor/autoload.php(7): ComposerAutoloaderInit659e89367e730dfc387f0ae7b89f60b7::getLoader()
+#4 /var/www-newapp/vendor/laravel/framework/src/Illuminate/Foundation/ComposerScripts.php(43): require_once('/var/www-newapp...')
+#5 phar:///usr/local/bin/composer/src/Composer/EventDispatcher/EventDispatcher.php(377): Illuminate\Foundation\ComposerScripts::postAutoloadDump(Object(Composer\Script\Event))
+#6 phar:///usr/local/bin/composer/sr in /var/www-newapp/vendor/composer/autoload_real.php on line 71
+[16-Feb-2023 01:56:47 UTC] PHP Fatal error:  composerRequire659e89367e730dfc387f0ae7b89f60b7(): Failed opening required '/var/www-newapp/vendor/composer/../iso/c8583.php' (include_path='.:/usr/share/pear:/usr/share/php') in /var/www-newapp/vendor/composer/autoload_real.php on line 71
