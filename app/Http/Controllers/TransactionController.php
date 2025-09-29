@@ -43,7 +43,6 @@ class TransactionController extends Controller
 
     public function index()
     {
-
         $today = Carbon::today()->toDateString();
 
         // $data = Http::get('http://192.168.26.26:10002/tm.php')->json();
@@ -57,9 +56,6 @@ class TransactionController extends Controller
         //     } else {
         //         $data[$key]['MERCHANT'] = $merchant;
         //     }
-
-
-
         // }
 
         // dd($data);
@@ -68,32 +64,33 @@ class TransactionController extends Controller
 
     public function data(Request $request)
     {
-
+        $userAuth = Auth::user();
+        $authCabang = $userAuth->cabangs->first();
+        $authCabangId = $authCabang ? $authCabang->CPC_MC_KODE_CABANG : null;
+        $authCabangLokasi = $authCabang ? $authCabang->CPC_MC_KODE_LOKASI : null;
+        $merchant = $userAuth->merchants->first();
         if ($request->ajax()) {
-
             $startDate = $request->input('start_date');
             $endDate = $request->input('end_date');
 
             // Menambahkan format tanggal untuk memastikan inklusi penuh hari terakhir
             if (!empty($startDate) && !empty($endDate)) {
-                $startDate = trim($startDate);
+                $startDate = trim($startDate) . ' 00:00:00';
                 $endDate = Carbon::createFromFormat('Y-m-d', trim($endDate))->endOfDay()->toDateTimeString();
             }
 
-
             switch (env('APP_ENV')) {
                 case 'local':
-
                     $userId = Auth::id();
                     $user = Auth::user();
 
                     // Retrieve data from the database based on user access to merchants
-                    $query = DB::table('QRIS_TRANSACTION_AQUERIER_MAIN')
+                    $query = DB::table('VSI_SWITCHER_VIOSS_BSB.QRIS_TRANSACTION_AQUERIER_MAIN')
                         ->distinct()
-                        ->join('user_has_merchant', 'QRIS_TRANSACTION_AQUERIER_MAIN.MERCHANT_ID', '=', 'user_has_merchant.MERCHANT_ID')
+                        ->join('user_has_merchant', 'VSI_SWITCHER_VIOSS_BSB.QRIS_TRANSACTION_AQUERIER_MAIN.MERCHANT_ID', '=', 'user_has_merchant.MERCHANT_ID')
                         ->join('users', 'user_has_merchant.USER_ID', '=', 'users.id')
-                        ->select('QRIS_TRANSACTION_AQUERIER_MAIN.*')
-                        ->whereBetween('QRIS_TRANSACTION_AQUERIER_MAIN.created_at', [$startDate, $endDate]);
+                        ->select('VSI_SWITCHER_VIOSS_BSB.QRIS_TRANSACTION_AQUERIER_MAIN.*')
+                        ->whereBetween('VSI_SWITCHER_VIOSS_BSB.QRIS_TRANSACTION_AQUERIER_MAIN.created_at', [$startDate, $endDate]);
 
                     // if ($userId != 1) { // Filter data for non-admin users
                     //     $query->where('users.id', $userId);
@@ -123,28 +120,64 @@ class TransactionController extends Controller
                     break;
 
                 case 'dev':
-                    $data = Http::get('http://192.168.26.26:10002/tm.php')->json();
+                    $user = Auth::user();
 
+                    // Retrieve data from the database based on user access to merchants
+                    $query = DB::table('VSI_SWITCHER_VIOSS_BSB.QRIS_TRANSACTION_AQUERIER_MAIN')
+                        ->distinct()
+                        ->join('VSI_SWITCHER_VIOSS_BSB.QRIS_MERCHANT', 'QRIS_TRANSACTION_AQUERIER_MAIN.MERCHANT_ID', '=', 'QRIS_MERCHANT.ID')
+                        // ->join('user_has_merchant', 'VSI_SWITCHER_VIOSS_BSB.QRIS_TRANSACTION_AQUERIER_MAIN.MERCHANT_ID', '=', 'user_has_merchant.MERCHANT_ID')
+                        // ->join('users', 'user_has_merchant.USER_ID', '=', 'users.id')
+                        ->select('VSI_SWITCHER_VIOSS_BSB.QRIS_TRANSACTION_AQUERIER_MAIN.*')
+                        ->whereBetween('VSI_SWITCHER_VIOSS_BSB.QRIS_TRANSACTION_AQUERIER_MAIN.created_at', [$startDate, $endDate]);
+
+                    if ($user->hasRole('Merchant')) {
+                        $query->where('QRIS_TRANSACTION_AQUERIER_MAIN.MERCHANT_ID', $merchant->ID);
+                    } else if ($user->hasRole('KC')) {
+                        $query->where('QRIS_MERCHANT.KODE_CABANG', $authCabangId);
+                    } elseif ($user->hasRole('KCP')) {
+                        $query->where('QRIS_MERCHANT.KODE_CABANG', $authCabangId);
+                        $query->where('QRIS_MERCHANT.KODE_LOKASI', $authCabangLokasi);
+                    }
+
+                    $data = $query->get()->map(function ($item) {
+                        return (array) $item;
+                    })->toArray();
+
+                    // Add additional processing if needed (e.g., enriching data with other details from the database)
                     foreach ($data as $key => $value) {
                         $merchant = Merchant::where('ID', $value['MERCHANT_ID'])->first();
                         $data[$key]['MERCHANT'] = $merchant ? $merchant->toArray() : null;
+
                         $nns = Nns::where('NNS', $value['ISSUING_INSTITUTION_NAME'])->first();
-                        // dd($nns->toArray());
-                        if ($nns != '') {
-                            // dd($nns);
-                            // dd($data[$key]['NNS']['NAME']);
+                        if ($nns) {
                             $data[$key]['NNS'] = $nns['NAME'];
                         } else {
-                            $data[$key]['NNS'] = $nns;
+                            $data[$key]['NNS'] = null;
                         }
                     }
-
                     break;
+                // $data = Http::get('http://192.168.26.26:10002/tm.php')->json();
+
+                // foreach ($data as $key => $value) {
+                //     $merchant = Merchant::where('ID', $value['MERCHANT_ID'])->first();
+                //     $data[$key]['MERCHANT'] = $merchant ? $merchant->toArray() : null;
+                //     $nns = Nns::where('NNS', $value['ISSUING_INSTITUTION_NAME'])->first();
+                //     // dd($nns->toArray());
+                //     if ($nns != '') {
+                //         // dd($nns);
+                //         // dd($data[$key]['NNS']['NAME']);
+                //         $data[$key]['NNS'] = $nns['NAME'];
+                //     } else {
+                //         $data[$key]['NNS'] = $nns;
+                //     }
+                // }
+
+                // break;
 
                 case 'prod':
                     $userId = Auth::id();
                     $user = Auth::user();
-
 
                     // Retrieve data from the database based on user access to merchants
                     $query = DB::table('QRIS_TRANSACTION_AQUERIER_MAIN')
@@ -189,8 +222,6 @@ class TransactionController extends Controller
     }
     public function data2(Request $request)
     {
-
-
         $searchValue = $request['search']['value']; // Search value
         $searchByAmount = $request['searchByAmount'];
         $searchByStatus = $request['searchByStatus'];
@@ -215,18 +246,15 @@ class TransactionController extends Controller
 
         switch (env('APP_ENV')) {
             case 'local':
-                $datas = Transaction::where('ID',$idString)->get()->toArray();
+                $datas = Transaction::where('ID', $idString)->get()->toArray();
                 break;
             case 'dev':
                 $datas = Http::get('http://192.168.26.26:10002/tm.php')->json();
                 break;
             case 'prod':
-                $datas = Transaction::where('ID',$idString)->get()->toArray();
+                $datas = Transaction::where('ID', $idString)->get()->toArray();
                 break;
         }
-
-
-
 
         // $dataDecode = json_decode($datas);
 
@@ -260,59 +288,51 @@ class TransactionController extends Controller
             // dd($mpan);
         }
 
-
-
-
-
         foreach ($datas as $data) {
-
             if ($data['ID'] == $idString) {
-
                 $data['AMOUNT_MDR'] = '';
                 $data['PAID_AT'] = '';
 
                 return response()->json([
-
-                    'MERCHANT_ACC_NUMBER'           =>   $data['MERCHANT_ACC_NUMBER'],
-                    'TIP_INDICATOR'                 =>   $data['TIP_INDICATOR'],
-                    'TRANSFER_REFF'                 =>   $data['TRANSFER_REFF'],
-                    'AMOUNT_TIP_PERCENTAGE'         =>   $data['AMOUNT_TIP_PERCENTAGE'],
-                    'DESCRIPTION'                   =>   $data['DESCRIPTION'],
-                    'QRIS'                          =>   $data['QRIS'],
-                    'TRANSACTION_ID'                =>   $data['TRANSACTION_ID'],
-                    'STATUS_TRANSFER'               =>   $data['STATUS_TRANSFER'],
-                    'STATUS'                        =>   $data['STATUS'],
-                    'AMOUNT'                        =>   $data['AMOUNT'],
-                    'EXPIRE_DATE_TIME'              =>   $data['EXPIRE_DATE_TIME'],
-                    'RETRIEVAL_REFERENCE_NUMBER'    =>   $data['RETRIEVAL_REFERENCE_NUMBER'],
-                    'CREATED_AT'                    =>   $data['CREATED_AT'],
-                    'TRANSACTION_TYPE'              =>   $data['TRANSACTION_TYPE'],
-                    'ID'                            =>   $data['ID'],
-                    'FEE_AMOUNT'                    =>   $data['FEE_AMOUNT'],
-                    'AMOUNT_REFUND'                 =>   $data['AMOUNT_REFUND'],
-                    'INVOICE_NUMBER'                =>   $data['INVOICE_NUMBER'],
-                    'POSTAL_CODE'                   =>   $data['POSTAL_CODE'],
-                    'UPDATED_AT'                    =>   $data['UPDATED_AT'],
-                    'TRANSFER_STATUS'               =>   $data['TRANSFER_STATUS'],
-                    'MERCHANT_ID'                   =>   $data['MERCHANT_ID'],
-                    'MERCHANT'                      =>   $data['MERCHANT'],
-                    'AQUERIER_TYPE'                  =>   $data['AQUERIER_TYPE'],
-                    'MID'                              =>   $data['MID'],
-                    'RRN_REFUND'                     =>   $data['RRN_REFUND'],
-                    'BIT3_RESPONSE'                  =>   $data['BIT3_RESPONSE'],
-                    'RC_FUND'                        =>   $data['RC_FUND'],
-                    'ACQUIRING_INSTITUTION_NAME'    =>   $data['ACQUIRING_INSTITUTION_NAME'],
-                    'ISSUING_INSTITUTION_NAME'      =>   $data['ISSUING_INSTITUTION_NAME'],
-                    'ISSUING_CUSTOMER_NAME'         =>   $data['ISSUING_CUSTOMER_NAME'],
-                    'CUSTOMER_PAN'                  =>   $data['CUSTOMER_PAN'],
-                    'NNS'                  =>   $data['NNS'],
-                    'bit_12'                  =>   $data['bit_12'],
-                    'BIT_2'                  =>   $data['BIT_2'],
-                    'CURRENT_AMOUNT_REFUND'                  =>   $data['CURRENT_AMOUNT_REFUND'],
-                    'MPAN'                  =>   $data['MPAN'],
-                    'AMOUNT_MDR'            => $data['AMOUNT_MDR'],
-                    'PAID_AT'                  =>   $data['PAID_AT'],
-
+                    'MERCHANT_ACC_NUMBER' => $data['MERCHANT_ACC_NUMBER'],
+                    'TIP_INDICATOR' => $data['TIP_INDICATOR'],
+                    'TRANSFER_REFF' => $data['TRANSFER_REFF'],
+                    'AMOUNT_TIP_PERCENTAGE' => $data['AMOUNT_TIP_PERCENTAGE'],
+                    'DESCRIPTION' => $data['DESCRIPTION'],
+                    'QRIS' => $data['QRIS'],
+                    'TRANSACTION_ID' => $data['TRANSACTION_ID'],
+                    'STATUS_TRANSFER' => $data['STATUS_TRANSFER'],
+                    'STATUS' => $data['STATUS'],
+                    'AMOUNT' => $data['AMOUNT'],
+                    'EXPIRE_DATE_TIME' => $data['EXPIRE_DATE_TIME'],
+                    'RETRIEVAL_REFERENCE_NUMBER' => $data['RETRIEVAL_REFERENCE_NUMBER'],
+                    'CREATED_AT' => $data['CREATED_AT'],
+                    'TRANSACTION_TYPE' => $data['TRANSACTION_TYPE'],
+                    'ID' => $data['ID'],
+                    'FEE_AMOUNT' => $data['FEE_AMOUNT'],
+                    'AMOUNT_REFUND' => $data['AMOUNT_REFUND'],
+                    'INVOICE_NUMBER' => $data['INVOICE_NUMBER'],
+                    'POSTAL_CODE' => $data['POSTAL_CODE'],
+                    'UPDATED_AT' => $data['UPDATED_AT'],
+                    'TRANSFER_STATUS' => $data['TRANSFER_STATUS'],
+                    'MERCHANT_ID' => $data['MERCHANT_ID'],
+                    'MERCHANT' => $data['MERCHANT'],
+                    'AQUERIER_TYPE' => $data['AQUERIER_TYPE'],
+                    'MID' => $data['MID'],
+                    'RRN_REFUND' => $data['RRN_REFUND'],
+                    'BIT3_RESPONSE' => $data['BIT3_RESPONSE'],
+                    'RC_FUND' => $data['RC_FUND'],
+                    'ACQUIRING_INSTITUTION_NAME' => $data['ACQUIRING_INSTITUTION_NAME'],
+                    'ISSUING_INSTITUTION_NAME' => $data['ISSUING_INSTITUTION_NAME'],
+                    'ISSUING_CUSTOMER_NAME' => $data['ISSUING_CUSTOMER_NAME'],
+                    'CUSTOMER_PAN' => $data['CUSTOMER_PAN'],
+                    'NNS' => $data['NNS'],
+                    'bit_12' => $data['bit_12'],
+                    'BIT_2' => $data['BIT_2'],
+                    'CURRENT_AMOUNT_REFUND' => $data['CURRENT_AMOUNT_REFUND'],
+                    'MPAN' => $data['MPAN'],
+                    'AMOUNT_MDR' => $data['AMOUNT_MDR'],
+                    'PAID_AT' => $data['PAID_AT'],
                 ]);
             }
         }

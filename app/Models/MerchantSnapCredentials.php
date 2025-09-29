@@ -14,8 +14,8 @@ class MerchantSnapCredentials extends Model implements AuthenticatableContract, 
 
     use Notifiable;
 
-    protected $connection = 'mysql2';
-    protected $table = 'QRIS_MERCHANT_SNAP_CREDENTIALS';
+    // protected $connection = 'mysql2';
+    protected $table = 'VSI_SWITCHER_VIOSS_BSB.QRIS_MERCHANT_SNAP_CREDENTIALS';
     protected $primaryKey = 'ID';
 
     public function merchant()

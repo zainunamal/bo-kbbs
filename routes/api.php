@@ -35,19 +35,19 @@ Route::get('/getLokasi/{provinsi}', 'API\GetLokasiController@getLokasi')->name('
 Route::group(['middleware' => ['cors']], function () {
     Route::post('/register', 'API\AuthController@register');
     Route::post('/gettoken', 'API\AuthController@getToken')->name('gettoken');
-    
+
     Route::group(['middleware' => ['check.auth']], function () {
         Route::get('/product', 'API\ProductController@index')->name('api.product');
         Route::post('/qris', 'API\QrisController@store')->name('api.qris');
         Route::post('/refund', 'API\RefundController@store')->name('api.refund');
         Route::get('/tranmain', 'API\TranmainController@get')->name('api.tranmainget');
-        
-        Route::get('/merchants', 'API\client\MerchantClientController@apiIndex')->name('api.merchant.index');  
-        Route::post('/merchants/store', 'API\client\MerchantClientController@apiStore')->name('api.merchant.store');  
-        Route::post('/qris/get', 'API\client\QrisClientController@get')->name('api.qris.get');  
-        Route::post('/refund/hit', 'API\client\RefundClientController@get')->name('api.refund.hit');  
+
+        Route::get('/merchants', 'API\client\MerchantClientController@apiIndex')->name('api.merchant.index');
+        Route::post('/merchants/store', 'API\client\MerchantClientController@apiStore')->name('api.merchant.store');
+        Route::post('/qris/get', 'API\client\QrisClientController@get')->name('api.qris.get');
+        Route::post('/refund/hit', 'API\client\RefundClientController@get')->name('api.refund.hit');
         Route::post('/transaction/get', 'API\client\TransactionClientController@index')->name('api.transaction.get');
-        Route::get('/transaction/status/{id}', 'API\client\TransactionClientController@status')->name('api.transaction.status');    
+        Route::get('/transaction/status/{id}', 'API\client\TransactionClientController@status')->name('api.transaction.status');
 
         Route::middleware('auth:api')->post('/password/change', 'API\AuthController@changePassword');
     });

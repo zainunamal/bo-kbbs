@@ -6,8 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class Merchant extends Model
 {
-    protected $connection = 'mysql2';
-    protected $table = 'QRIS_MERCHANT';
+    // protected $connection = 'mysql2';
+    protected $table = 'VSI_SWITCHER_VIOSS_BSB.QRIS_MERCHANT';
     protected $primaryKey = 'ID';
     // protected $table = 'qris_merchant_2';
     public $timestamps = false;
@@ -42,7 +42,9 @@ class Merchant extends Model
         'PHONE_MOBILE',
         'EMAIL_MOBILE',
         'QR_TYPE',
-        'MERCHANT_TYPE_2'
+        'MERCHANT_TYPE_2',
+        'KODE_CABANG',
+        'KODE_LOKASI',
     ];
 
 

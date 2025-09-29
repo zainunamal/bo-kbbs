@@ -34,11 +34,8 @@ class LoginController extends Controller
 
         $appEnv = getenv('APP_ENV');
 
-
         if ($this->attemptLogin($request)) {
-
             if ($appEnv === 'prod') {
-
                 $user = auth()->user();
 
                 // $forbiddenDomainForAdmin = 'bo-kbbs.test';
@@ -69,7 +66,18 @@ class LoginController extends Controller
      *
      * @var string
      */
-    protected $redirectTo = RouteServiceProvider::HOME;
+    // protected $redirectTo = RouteServiceProvider::HOME;
+    protected function redirectTo()
+    {
+        if (auth()->user()->hasAnyRole(['Superadmin','Admin','KC','KCP'])) {
+            return '/merchant';
+        }
+        if (auth()->user()->hasRole('Merchant')) {
+            return '/qris';
+        }
+        return '/home'; // fallback
+    }
+
 
     /**
      * Create a new controller instance.

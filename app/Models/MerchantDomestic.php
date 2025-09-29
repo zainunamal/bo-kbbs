@@ -6,8 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class MerchantDomestic extends Model
 {
-    protected $connection = 'mysql2';
-    protected $table = 'QRIS_MERCHANT_DOMESTIC';
+    // protected $connection = 'mysql2';
+    protected $table = 'VSI_SWITCHER_VIOSS_BSB.QRIS_MERCHANT_DOMESTIC';
     protected $primaryKey = 'ID';
     public $timestamps = false;
        

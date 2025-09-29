@@ -95,6 +95,8 @@
                                         </option>
                                     @endforeach
                                 </select>
+                                {{-- Hidden field --}}
+                                <input type="hidden" name="kode_lokasi" id="kode_lokasi">
                             </div>
 
 
@@ -306,6 +308,14 @@
                         'change');
                 }
             });
+
+            $('#cabang').on('change', function() {
+                var kodeCabang = $(this).val();
+                var kodeLokasi = $('#cabang option:selected').data('lokasi');
+
+                $('#kode_cabang').val(kodeCabang); // kalau pakai hidden cabang
+                $('#kode_lokasi').val(kodeLokasi);
+            });
         });
 
 
@@ -488,7 +498,7 @@
                 var baseMpan = nns + "0" + mid;
                 console.log(baseMpan);
                 // var baseMpan = '936005210040100006';
-                
+
                 var luhnDigit = calculateLuhn(baseMpan);
                 console.log(luhnDigit);
                 var mpan = baseMpan + luhnDigit;

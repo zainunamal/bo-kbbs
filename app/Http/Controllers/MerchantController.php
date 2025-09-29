@@ -6,32 +6,25 @@ use App\Models\Merchant;
 use App\Models\Mcc;
 use App\Models\MerchantDetails;
 use App\Models\MerchantDomestic;
+use App\Models\UserCabang;
 use App\Models\UserMerchant;
 use App\Models\QrisMerchantActivity;
 use App\Models\Cabang;
 use App\Models\Criteria;
 use App\Models\KabKota;
-use App\Models\Wilayah;
 use App\User;
 use Hash;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
-use Illuminate\Support\Str;
 use App\Traits\Common;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
-
-
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
-
 use Carbon\Carbon;
 use App\Exports\MerchantsExport;
 use Exception;
@@ -57,28 +50,37 @@ class MerchantController extends Controller
 
     public function index(Request $request)
     {
-        // $getUserId = Auth::id();
         $user = Auth::user();
+        $authCabang = $user->cabangs->first();
+        $authCabangId = $authCabang ? $authCabang->CPC_MC_KODE_CABANG : null;
+        $authCabangLokasi = $authCabang ? $authCabang->CPC_MC_KODE_LOKASI : null;
+
         $search = $request->input('search');
 
-        $query = DB::connection('mysql2')->table('QRIS_MERCHANT')
+        $query = DB::table('VSI_SWITCHER_VIOSS_BSB.QRIS_MERCHANT')
             ->whereIn('STATUS', [0, 1])
-            ->select('QRIS_MERCHANT.*');
+            ->select('VSI_SWITCHER_VIOSS_BSB.QRIS_MERCHANT.*');
 
-        if (!$user->hasRole(['Admin', 'Superadmin'])) {
-            $query->join('user_has_merchant', 'QRIS_MERCHANT.ID', '=', 'user_has_merchant.MERCHANT_ID');
-            $query->join('users', 'user_has_merchant.USER_ID', '=', 'users.id');
-            $query->where('users.id', $user->id);
+        if ($user->hasRole('Merchant')) {
+            // $query->join('user_has_merchant', 'VSI_SWITCHER_VIOSS_BSB.QRIS_MERCHANT.ID', '=', 'user_has_merchant.MERCHANT_ID');
+            // $query->join('users', 'user_has_merchant.USER_ID', '=', 'users.id');
+            // $query->whereIn('users.id', $user->id);
+            $query->whereIn('VSI_SWITCHER_VIOSS_BSB.QRIS_MERCHANT.ID', $user->merchants()->pluck('VSI_SWITCHER_VIOSS_BSB.QRIS_MERCHANT.ID')->toArray());
+        } elseif ($user->hasRole('KC')) {
+            $query->where('VSI_SWITCHER_VIOSS_BSB.QRIS_MERCHANT.KODE_CABANG', $authCabangId);
+        } elseif ($user->hasRole('KCP')) {
+            $query->where('VSI_SWITCHER_VIOSS_BSB.QRIS_MERCHANT.KODE_CABANG', $authCabangId);
+            $query->where('VSI_SWITCHER_VIOSS_BSB.QRIS_MERCHANT.KODE_LOKASI', $authCabangLokasi);
         }
 
         if ($search) {
-            $query->where('QRIS_MERCHANT.MERCHANT_NAME', 'like', '%' . $search . '%');
+            $query->where('VSI_SWITCHER_VIOSS_BSB.QRIS_MERCHANT.MERCHANT_NAME', 'like', '%' . $search . '%');
         }
 
-        $query->groupBy('QRIS_MERCHANT.ID');
+        // $query->groupBy('VSI_SWITCHER_VIOSS_BSB.QRIS_MERCHANT.ID');
 
         $merchants = $query->paginate(10);
-        
+
         // Menambahkan imagePath dan imageExists ke setiap merchant
         $merchants->transform(function ($merchant) {
             $nmid = $merchant->NMID;
@@ -103,10 +105,22 @@ class MerchantController extends Controller
      */
     public function create()
     {
+        $userAuth = Auth::user();
+        $authCabang = $userAuth->cabangs->first();
+        $authCabangId = $authCabang ? $authCabang->CPC_MC_KODE_CABANG : null;
+        $authCabangLokasi = $authCabang ? $authCabang->CPC_MC_KODE_LOKASI : null;
         $mcc = Mcc::orderBy('DESC_MCC')->get()->toArray();
         $criteria = Criteria::orderBy('NO')->get()->toArray();
         // $provinsi = Wilayah::select('PROVINSI')->distinct()->get();
-        $cabangs = Cabang::all();
+        // $cabangs = Cabang::all();
+        $sql = Cabang::orderBy('CPC_MC_NAMA');
+        if ($userAuth->hasRole('KC')) {
+            $sql->where('CPC_MC_KODE_CABANG', $authCabangId);
+        } elseif ($userAuth->hasRole('KCP')) {
+            $sql->where('CPC_MC_KODE_CABANG', $authCabangId);
+            $sql->where('CPC_MC_KODE_LOKASI', $authCabangLokasi);
+        }
+        $cabangs = $sql->get();
 
         $kabKota = KabKota::select('KOTA_KABUPATEN')->distinct()->get();
 
@@ -195,14 +209,9 @@ class MerchantController extends Controller
                 break;
         }
 
-
-
-
         DB::beginTransaction();
         try {
-
             Log::channel('merchant')->info('CREATE BEGIN');
-
 
             $date = date('Y-m-d H:i:s');
             $nmid = 'ID' . genID(13);
@@ -218,11 +227,7 @@ class MerchantController extends Controller
             $merchantDomestic = MerchantDomestic::create($data_domestic);
             Log::channel('merchant')->info('RESP MerchantDomestic : ' . json_encode($merchantDomestic));
 
-
-
             $id_domestic = $merchantDomestic->ID;
-
-
             $data_merchant = [
                 'CREATED_AT' => $date,
                 'UPDATED_AT' => '',
@@ -248,13 +253,14 @@ class MerchantController extends Controller
                 'EMAIL_MOBILE' => $validatedData['email'],
                 'QR_TYPE' => $validatedData['qrType'],
                 'MERCHANT_TYPE_2' => $validatedData['merchantTipe'],
+                'KODE_CABANG' => $allData['cabang'],
+                'KODE_LOKASI' => $allData['kode_lokasi'],
 
             ];
 
             Log::channel('merchant')->info('REQ merchants : ' . json_encode($data_merchant));
             $merchants = Merchant::create($data_merchant);
             Log::channel('merchant')->info('RESP merchants : ' . json_encode($merchants));
-
 
             // User Has Merchant
             $merchant_id = $merchants->ID;
@@ -265,11 +271,21 @@ class MerchantController extends Controller
             ];
             Log::channel('merchant')->info('REQ USER : ' . json_encode($data_user));
             $user = User::create($data_user);
+            if (!$user) {
+                throw new Exception('User creation failed');
+            }
             $user->assignRole($request->roles);
             // dd($user);
             Log::channel('merchant')->info('RESP USER : ' . $user);
 
             $userNew = $user->id;
+
+            $data_user_has_cabang_new = [
+                'USER_ID' => $userNew,
+                'KODE_CABANG' => $data_merchant['KODE_CABANG'],
+                'KODE_LOKASI' => $data_merchant['KODE_LOKASI'],
+            ];
+            $data_user_has_cabang_new = UserCabang::create($data_user_has_cabang_new);
 
             $data_user_has_merchant_new = [
                 'USER_ID' => $userNew,
@@ -277,12 +293,13 @@ class MerchantController extends Controller
             ];
             $user_has_merchant_new = UserMerchant::create($data_user_has_merchant_new);
 
-            $data_user_has_merchant_auth = [
-                'USER_ID' => Auth::id(),
-                'MERCHANT_ID' => $merchant_id,
-            ];
-            $user_has_merchant_auth = UserMerchant::create($data_user_has_merchant_auth);
-            Log::channel('merchant')->info('RESP USER_HAS_MERCHANT : ' . $user_has_merchant_new . '&&' . $user_has_merchant_auth);
+            // $data_user_has_merchant_auth = [
+            //     'USER_ID' => Auth::id(),
+            //     'MERCHANT_ID' => $merchant_id,
+            // ];
+            // $user_has_merchant_auth = UserMerchant::create($data_user_has_merchant_auth);
+            // Log::channel('merchant')->info('RESP USER_HAS_MERCHANT : ' . $user_has_merchant_new . '&&' . $user_has_merchant_auth);
+            Log::channel('merchant')->info('RESP USER_HAS_MERCHANT : ' . $user_has_merchant_new);
             $data_detail = [
                 'MERCHANT_ID' => $merchant_id,
                 'DOMAIN' => $domain,
@@ -294,7 +311,6 @@ class MerchantController extends Controller
             Log::channel('merchant')->info('REQ MerchantDetails : ' . json_encode($data_detail));
             $merchant_detail = MerchantDetails::create($data_detail);
             Log::channel('merchant')->info('RESP MerchantDetails : ' . $merchant_detail);
-
 
             // Log activity for REQUEST
             $raw_request = json_encode($request->toArray());
@@ -308,16 +324,12 @@ class MerchantController extends Controller
                 'merchant' => $merchants,
                 'merchant_details' => $merchant_detail,
                 'merchant_domestic' => $merchantDomestic,
-                'user_has_merchant' => $data_user_has_merchant_auth
+                'user_has_merchant' => $user_has_merchant_new
             ]);
             $activity_type = 'RESPONSE';
             $comment = 'ADD RESPONSE';
             $action = 'ADD';
             $this->logMerchantActivityNew(null, $raw_response, $comment, $action, $activity_type);
-
-
-
-
 
             // $param = [
             //     'MERCHANT_DOMESTIC' => $data_domestic,

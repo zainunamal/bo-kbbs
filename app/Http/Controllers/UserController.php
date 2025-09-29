@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Cabang;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use App\Models\Merchant;
 use App\User;
 use Spatie\Permission\Models\Role;
 use DB;
@@ -33,12 +35,23 @@ class UserController extends Controller
      */
     public function index(Request $request)
     {
-        // $user = Auth::user();
-        // foreach ($user->roles as $key => $role) {
-        //     dd($role->id);
-        // }
+        $user = Auth::user();
+        $cabang = $user->cabangs->first();
+        $cabangName = $cabang ? $cabang->CPC_MC_NAMA : null;
+        $cabangId = $cabang ? $cabang->CPC_MC_KODE_CABANG : null;
+        $cabangLokasi = $cabang ? $cabang->CPC_MC_KODE_LOKASI : null;
         $search = $request->search;
         $sql = User::orderBy('id', 'DESC');
+        if ($user->hasRole('KCP')) {
+            $sql->whereHas('cabangs', function ($query) use ($cabangId, $cabangLokasi) {
+                $query->where('CPC_MC_KODE_CABANG', $cabangId);
+                $query->where('CPC_MC_KODE_LOKASI', $cabangLokasi);
+            });
+        } elseif ($user->hasRole('KC')) {
+            $sql->whereHas('cabangs', function ($query) use ($cabangId) {
+                $query->where('CPC_MC_KODE_CABANG', $cabangId);
+            });
+        }
         if ($search != '') {
             $sql->where('email', 'like', '%' . $search . '%');
         }
@@ -54,8 +67,39 @@ class UserController extends Controller
      */
     public function create()
     {
-        $roles = Role::pluck('name', 'name')->all();
-        return view('users.create', compact('roles'));
+        $user = Auth::user();
+        $cabang = $user->cabangs->first();
+        $cabangName = $cabang ? $cabang->CPC_MC_NAMA : null;
+        $cabangId = $cabang ? $cabang->CPC_MC_KODE_CABANG : null;
+        $cabangLokasi = $cabang ? $cabang->CPC_MC_KODE_LOKASI : null;
+        if ($user->hasRole(['Superadmin', 'Admin'])) {
+            $roles = Role::orderBy('name')->pluck('name', 'name');
+        } elseif ($user->hasRole('KC')) {
+            $roles = Role::orderBy('name')->whereIn('name', ['KC', 'KCP'])->pluck('name', 'name');
+        } elseif ($user->hasRole('KCP')) {
+            $roles = Role::orderBy('name')->whereIn('name', ['KCP'])->pluck('name', 'name');
+        } else {
+            $roles = [];
+        }
+        $roles->all();
+
+        if ($user->hasRole(['Superadmin', 'Admin'])) {
+            $merchants = Merchant::orderBy('MERCHANT_NAME')->pluck('MERCHANT_NAME', 'MERCHANT_NAME');
+        } else {
+            $merchants = $user->merchants()->pluck('MERCHANT_NAME', 'MERCHANT_NAME');
+        }
+        $merchants->all();
+
+        $sql = Cabang::orderBy('CPC_MC_NAMA');
+        if ($user->hasRole('KC')) {
+            $sql->where('CPC_MC_KODE_CABANG', $cabangId);
+        } elseif ($user->hasRole('KCP')) {
+            $sql->where('CPC_MC_KODE_CABANG', $cabangId);
+            $sql->where('CPC_MC_KODE_LOKASI', $cabangLokasi);
+        }
+        $cabangs = $sql->get();
+
+        return view('users.create', compact('roles', 'merchants', 'cabangs'));
     }
 
     /**
@@ -78,6 +122,24 @@ class UserController extends Controller
 
         $user = User::create($input);
         $user->assignRole($request->input('roles'));
+
+        // === Simpan cabang jika dipilih ===
+        if ($request->filled('cabang')) {
+            // pakai attach dengan pivot tambahan
+            $user->cabangs()->attach(
+                $request->input('cabang'),
+                ['KODE_LOKASI' => $request->input('kode_lokasi')]
+            );
+        }
+
+        // === Simpan merchant jika dipilih ===
+        if ($request->filled('merchants')) {
+            // Kalau single select
+            $user->merchants()->attach($request->input('merchants'));
+
+            // Kalau multiple select pakai array
+            // $user->merchants()->attach($request->input('merchants', []));
+        }
 
         return redirect()->route('users.index')
             ->with('success', 'User created successfully');
@@ -106,10 +168,42 @@ class UserController extends Controller
     {
         $id = Crypt::decrypt($id);
         $user = User::find($id);
-        $roles = Role::pluck('name', 'name')->all();
-        $userRole = $user->roles->pluck('name', 'name')->all();
+        $userAuth = Auth::user();
+        $authCabang = $userAuth->cabangs->first();
+        $authCabangId = $authCabang ? $authCabang->CPC_MC_KODE_CABANG : null;
+        $authCabangLokasi = $authCabang ? $authCabang->CPC_MC_KODE_LOKASI : null;
+        if ($userAuth->hasRole(['Superadmin', 'Admin'])) {
+            $roles = Role::orderBy('name')->pluck('name', 'name');
+        } elseif ($userAuth->hasRole('KC')) {
+            $roles = Role::orderBy('name')->whereIn('name', ['KC', 'KCP', 'Merchant'])->pluck('name', 'name');
+        } elseif ($userAuth->hasRole('KCP')) {
+            $roles = Role::orderBy('name')->whereIn('name', ['KCP', 'Merchant'])->pluck('name', 'name');
+        } else {
+            $roles = [];
+        }
+        $roles->all();
+        $userRole = $user->roles->pluck('name')->first(); // for single select
 
-        return view('users.edit', compact('user', 'roles', 'userRole'));
+        if ($userAuth->hasRole(['Superadmin', 'Admin'])) {
+            $merchants = Merchant::orderBy('MERCHANT_NAME')->pluck('MERCHANT_NAME', 'MERCHANT_NAME');
+        } else {
+            $merchants = $userAuth->merchants()->pluck('MERCHANT_NAME', 'MERCHANT_NAME');
+        }
+        $merchants->all();
+
+        $sql = Cabang::orderBy('CPC_MC_NAMA');
+        if ($userAuth->hasRole('KC')) {
+            $sql->where('CPC_MC_KODE_CABANG', $authCabangId);
+        } elseif ($userAuth->hasRole('KCP')) {
+            $sql->where('CPC_MC_KODE_CABANG', $authCabangId);
+            $sql->where('CPC_MC_KODE_LOKASI', $authCabangLokasi);
+        }
+        $cabangs = $sql->get();
+
+        $userMerchant = $user->merchants->pluck('MERCHANT_NAME')->first();
+        $userCabang = $user->cabangs->first();
+
+        return view('users.edit', compact('user', 'roles', 'userRole', 'merchants', 'cabangs', 'userMerchant', 'userCabang'));
     }
 
     /**
@@ -140,6 +234,21 @@ class UserController extends Controller
         DB::table('model_has_roles')->where('model_id', $id)->delete();
 
         $user->assignRole($request->input('roles'));
+
+        // === Update cabang ===
+        $user->cabangs()->detach();
+        if ($request->filled('cabang')) {
+            $user->cabangs()->attach(
+                $request->input('cabang'),
+                ['KODE_LOKASI' => $request->input('kode_lokasi')]
+            );
+        }
+
+        // === Update merchant ===
+        $user->merchants()->detach();
+        if ($request->filled('merchants')) {
+            $user->merchants()->attach($request->input('merchants'));
+        }
 
         return redirect()->route('users.index')
             ->with('success', 'User updated successfully');

@@ -38,11 +38,11 @@ class QrisController extends Controller
         $user = Auth::user(); 
 
 
-        $query = DB::table('QRIS_MERCHANT')
+        $query = DB::table('VSI_SWITCHER_VIOSS_BSB.QRIS_MERCHANT')
             ->distinct()
-            ->join('user_has_merchant', 'QRIS_MERCHANT.ID', '=', 'user_has_merchant.MERCHANT_ID')
+            ->join('user_has_merchant', 'VSI_SWITCHER_VIOSS_BSB.QRIS_MERCHANT.ID', '=', 'user_has_merchant.MERCHANT_ID')
             ->join('users', 'user_has_merchant.USER_ID', '=', 'users.id')
-            ->select('QRIS_MERCHANT.*');
+            ->select('VSI_SWITCHER_VIOSS_BSB.QRIS_MERCHANT.*');
             // ->groupBy('QRIS_MERCHANT.ID');
 
         if (!$user->hasRole(['Admin', 'Superadmin'])) {

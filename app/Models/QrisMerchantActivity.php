@@ -8,9 +8,9 @@ use Illuminate\Database\Eloquent\Model;
 class QrisMerchantActivity extends Model
 {
     // use HasFactory;
-    protected $connection = 'mysql2';
+    // protected $connection = 'mysql2';
 
-    protected $table = 'QRIS_MERCHANT_ACTIVITY';
+    protected $table = 'VSI_SWITCHER_VIOSS_BSB.QRIS_MERCHANT_ACTIVITY';
 
     protected $fillable = [
         'merchant_id',
