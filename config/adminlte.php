@@ -14,7 +14,7 @@ return [
     |
     */
 
-    'title' => 'QRIS Merchant KBBS',
+    'title' => 'QRIS Merchant KBBS',
     'title_prefix' => '',
     'title_postfix' => '',
 
@@ -63,12 +63,13 @@ return [
     |
     */
 
-    'logo' => '<b>QRIS Merchant KBBS</b>',
-    'logo_img' => 'vendor/adminlte/dist/img/AdminLTELogo.png',
+    // 'logo' => '<b>QRIS Merchant KBBS</b>',
+    'logo' => '',
+    'logo_img' => 'vendor/adminlte/dist/img/LOGO-KB-BUKOPIN-SYARIAH-XS.png',
     'logo_img_class' => 'brand-image img-circle elevation-3',
-    'logo_img_xl' => null,
+    'logo_img_xl' => 'vendor/adminlte/dist/img/LOGO-KB-BUKOPIN-SYARIAH.png',
     'logo_img_xl_class' => 'brand-image-xs',
-    'logo_img_alt' => 'Admin Logo',
+    'logo_img_alt' => 'KBBS',
 
     /*
     |--------------------------------------------------------------------------
@@ -86,8 +87,8 @@ return [
     'auth_logo' => [
         'enabled' => false,
         'img' => [
-            'path' => 'vendor/adminlte/dist/img/AdminLTELogo.png',
-            'alt' => 'Auth Logo',
+            'path' => 'vendor/adminlte/dist/img/LOGO-KB-BUKOPIN-SYARIAH.png',
+            'alt' => 'KBBS',
             'class' => '',
             'width' => 50,
             'height' => 50,
@@ -109,11 +110,11 @@ return [
     'preloader' => [
         'enabled' => true,
         'img' => [
-            'path' => 'vendor/adminlte/dist/img/AdminLTELogo.png',
-            'alt' => 'AdminLTE Preloader Image',
+            'path' => 'vendor/adminlte/dist/img/LOGO-KB-BUKOPIN-SYARIAH.png',
+            'alt' => 'KBBS',
             'effect' => 'animation__shake',
-            'width' => 60,
-            'height' => 60,
+            'width' => 500,
+            'height' => 360,
         ],
     ],
 
@@ -297,7 +298,7 @@ return [
         //     'topnav_right' => true,
         // ],
         [
-            'type'         => 'fullscreen-widget',
+            'type' => 'fullscreen-widget',
             'topnav_right' => true,
         ],
 
@@ -306,12 +307,11 @@ return [
             'type' => 'sidebar-menu-search',
             'text' => 'search',
         ],
-        [
-            'text' => 'blog',
-            'url'  => 'admin/blog',
-            'can'  => 'manage-blog',
-        ],
-       
+        // [
+        //     'text' => 'blog',
+        //     'url'  => 'admin/blog',
+        //     'can'  => 'manage-blog',
+        // ],
         // [
         //     'text'        => 'Manage Users',
         //     'url'         => 'users',
@@ -337,58 +337,68 @@ return [
         //     'label_color' => 'success',
         // ],
         // ['header' => 'test'],
-       
         [
             'text' => 'Merchant Management',
-          
-            'icon' => 'fas fa-fw fa-share',
+            'icon' => 'fas fa-fw fa-store',
             'submenu' => [
                 [
                     'text' => 'Manage Merchant',
-                    'url'  => 'merchant',
+                    'url' => 'merchant',
                 ],
                 [
                     'text' => 'Manage Categories',
-                    'url'  => 'merchantCategories',
+                    'url' => 'merchantCategories',
                 ],
-              
-              
+                [
+                    'text' => 'Resend Email',
+                    'url' => 'merchantResend',
+                    'can' => 'resend-email',
+                ],
             ],
         ],
         [
-            'text' => 'Generate QRIS',
-            'url'  => 'qris',
-            'icon' => 'fas fa-fw fa-share',
+            'text' => 'QRIS Management',
+            'url' => 'qris',
+            'icon' => 'fas fa-solid fa-qrcode',
         ],
         [
             'text' => 'Refund',
-            'url'  => 'refund',
-            'icon' => 'fas fa-fw fa-share',
+            'url' => 'refund',
+            'icon' => 'fas fa-solid fa-backward',
+            'can' => 'refund-list'
         ],
         [
             'text' => 'Transaction',
-            'url'  => 'transaction',
+            'url' => 'transaction',
             'icon' => 'fa fa-fw fa-list',
         ],
+        // [
+        //     'text' => 'Health Check Monitoring',
+        //     'url' => 'health',
+        //     'icon' => 'fa fa-fw fa-heartbeat',
+        // ],
 
         [
-            'text'    => 'User Management',
-            'icon'    => 'far fa-fw fa-user',
-            'can'  => 'user-create',
+            'text' => 'User Management',
+            'icon' => 'far fa-fw fa-user',
+            'can' => 'user-create',
             'submenu' => [
                 [
                     'text' => 'Manage Users',
-                    'url'  => 'users',
+                    'url' => 'users',
+                    'can' => 'user-list',
                 ],
                 [
                     'text' => 'Manage Roles',
-                    'url'  => 'roles',
+                    'url' => 'roles',
+                    'can' => 'role-list',
                 ],
                 [
                     'text' => 'Manage Permissions',
-                    'url'  => 'permissions',
+                    'url' => 'permissions',
+                    'can' => 'permission-list',
                 ],
-              
+
             ],
         ],
         // [
@@ -508,7 +518,7 @@ return [
             ],
         ],
         'Select2' => [
-            'active' => false,
+            'active' => true,
             'files' => [
                 [
                     'type' => 'js',

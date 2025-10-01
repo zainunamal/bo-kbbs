@@ -9,9 +9,11 @@ use App\Services\Common\CekMutasiResponse;
 
 trait Common
 {
-    private $ip     = '192.168.26.26';
-    private $port   = '23791';
+
+    private $ip     = '10.11.13.15';
+    private $port   = '23792';
     private $to     = '30';
+    
 
     public function cekNorek($norek)
     {

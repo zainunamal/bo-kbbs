@@ -116,6 +116,11 @@ return [
             'path' => storage_path('logs/'.date('Y-m-d').'-apiclient.log'),
             'level' => 'info',
         ],
+        'merchant' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/'.date('Y-m-d').'-merchant.log'),
+            'level' => 'info',
+        ],
     ],
 
 ];

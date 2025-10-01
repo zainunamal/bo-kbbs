@@ -35,47 +35,78 @@ class RefundController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function index()
-{
-    $datas = [];
-    switch (env('APP_ENV')) {
-        case 'local':
-            $datas = Http::get(env('API_URL_TM'))->json();  // Menggunakan variabel API_URL dari file .env
-            break;
-        case 'dev':
-            $datas = Http::get(env('API_URL_TM'))->json();  // Menggunakan variabel API_URL dari file .env
-            break;
-        case 'prod':
-            $userId = Auth::id();
+    {
 
-            $query = DB::table('QRIS_TRANSACTION_AQUERIER_MAIN')
-                ->join('user_has_merchant', 'QRIS_TRANSACTION_AQUERIER_MAIN.MERCHANT_ID', '=', 'user_has_merchant.MERCHANT_ID')
-                ->join('users', 'user_has_merchant.USER_ID', '=', 'users.id')
-                ->select('QRIS_TRANSACTION_AQUERIER_MAIN.*');
+        $getUserId = Auth::id();
+        $userId = $getUserId;
 
-                if ($userId != 1) {
-                    $query->where('users.id', $userId);
-                }
+        // $query = DB::table('QRIS_MERCHANT')
+        //     ->join('user_has_merchant', 'QRIS_MERCHANT.ID', '=', 'user_has_merchant.MERCHANT_ID')
+        //     ->join('users', 'user_has_merchant.USER_ID', '=', 'users.id')
+        //     ->select('QRIS_MERCHANT.*');
+
+        // if ($userId != 1) {
+        //     $query->where('users.id', $userId);
+        // }
+
+
+
+        $datas = [];
+        switch (env('APP_ENV')) {
+            case 'local':
+                $userId = Auth::id();
+                $user = Auth::user(); 
+
+
+                $query = DB::table('QRIS_TRANSACTION_AQUERIER_MAIN')
+                    ->distinct()
+                    ->join('user_has_merchant', 'QRIS_TRANSACTION_AQUERIER_MAIN.MERCHANT_ID', '=', 'user_has_merchant.MERCHANT_ID')
+                    ->join('users', 'user_has_merchant.USER_ID', '=', 'users.id')
+                    ->select('QRIS_TRANSACTION_AQUERIER_MAIN.*');
+
+                    if (!$user->hasRole(['Admin', 'Superadmin'])) {
+                        $query->where('users.id', $user->id);
+                    }
                 $datas = $query->get()->toArray();
-            break;
-    }
+                break;
+            case 'dev':
+                $datas = Http::get(env('API_URL_TM'))->json();  // Menggunakan variabel API_URL dari file .env
+                break;
+            case 'prod':
+                $userId = Auth::id();
+                $user = Auth::user(); 
 
-   
-    
-    $data = []; // Membuat array kosong
-    foreach ($datas as $item) {
-        $data[] = (array) $item; // Mengubah objek menjadi array asosiatif
-    }
 
-    $amount = null; // Nilai default jika $amount null
-    foreach ($data as $p) {
-        if ($p['AMOUNT'] !== null) {
-            $amount = $p['AMOUNT'];
-            break; // Keluar dari loop jika $amount sudah ditemukan
+                $query = DB::table('QRIS_TRANSACTION_AQUERIER_MAIN')
+                    ->distinct()
+                    ->join('user_has_merchant', 'QRIS_TRANSACTION_AQUERIER_MAIN.MERCHANT_ID', '=', 'user_has_merchant.MERCHANT_ID')
+                    ->join('users', 'user_has_merchant.USER_ID', '=', 'users.id')
+                    ->select('QRIS_TRANSACTION_AQUERIER_MAIN.*');
+
+                    if (!$user->hasRole(['Admin', 'Superadmin'])) {
+                        $query->where('users.id', $user->id);
+                    }
+                $datas = $query->get()->toArray();
+                break;
         }
-    }
 
-    return view('refund.index', compact('data', 'amount'));
-}
+
+
+        $data = []; // Membuat array kosong
+        foreach ($datas as $item) {
+            $data[] = (array) $item; // Mengubah objek menjadi array asosiatif
+        }
+
+        $amount = null; // Nilai default jika $amount null
+        foreach ($data as $p) {
+            if ($p['AMOUNT'] !== null) {
+                $amount = $p['AMOUNT'];
+                break; // Keluar dari loop jika $amount sudah ditemukan
+            }
+        }
+
+        return view('refund.index', compact('data', 'amount'));
+    }
 
 
     /**
@@ -86,24 +117,24 @@ class RefundController extends Controller
      */
     public function hit(Request $request)
     {
-      
+
         // dd($request->toArray());
 
         $request->validate([
-            'RRN'=>'required',
+            'RRN' => 'required',
             'AMOUNTS' => 'required|integer',
             'AMOUNT' => 'required|integer|lte:AMOUNTS',
             'ACC_SRC' => 'required',
             'INVOICE_NUMBER' => 'required',
         ]);
-     
+
         $data = [
-        
-                "RRN" => $request['RRN'],
-                "AMOUNT" => $request['AMOUNT'],
-                "ACC_SRC" => $request['ACC_SRC'],
-                "INVOICE_NUMBER" => $request['INVOICE_NUMBER'],
-            
+
+            "RRN" => $request['RRN'],
+            "AMOUNT" => $request['AMOUNT'],
+            "ACC_SRC" => $request['ACC_SRC'],
+            "INVOICE_NUMBER" => $request['INVOICE_NUMBER'],
+
         ];
 
         // dd($request->user());
@@ -134,37 +165,31 @@ class RefundController extends Controller
         $resptoken = $token->json();
 
         $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' .$resptoken['access_token'] ,
+            'Authorization' => 'Bearer ' . $resptoken['access_token'],
             'Content-Type' => 'application/json',
         ])->post(
             $baseurl . '/api/refund',
             $data
         );
-        
+
         // dd($response->json());
         $res = $response['RC'];
 
         // dd($res);
-        $error = ( $response != '0000' );
+        $error = ($response != '0000');
         $Msg =  $response['RM'];
-        
+
         try {
             if ($res != '0000') {
                 return redirect()->route('refund.index')
-                ->with('errors', 'Refund Failed. ' . json_encode($Msg));
+                    ->with('errors', 'Refund Failed. ' . json_encode($Msg));
             }
-        
+
             return redirect()->route('refund.index')
                 ->with('success', 'Refund successful');
         } catch (Exception $e) {
             return redirect()->route('refund.index')
                 ->with('errors', $e->getMessage());
         }
-        
-        
-        
-        
-        
     }
 }
-

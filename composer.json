@@ -9,6 +9,7 @@
     "license": "MIT",
     "require": {
         "php": "^7.2.5",
+        "carbonphp/carbon-doctrine-types": "^1.0",
         "fideloper/proxy": "^4.2",
         "fruitcake/laravel-cors": "^1.0",
         "guzzlehttp/guzzle": "^6.3",
@@ -20,6 +21,11 @@
         "laravel/tinker": "^2.0",
         "laravel/ui": "2.1",
         "laravelcollective/html": "^6.3",
+        "lcobucci/clock": "^1.2",
+        "maatwebsite/excel": "^3.1",
+        "mews/captcha": "*",
+        "phpoffice/phpspreadsheet": "^1.25",
+        "psr/clock": "^1.0",
         "simplesoftwareio/simple-qrcode": "^4.2",
         "spatie/laravel-permission": "^5.7",
         "yajra/laravel-datatables-oracle": "^9.21"

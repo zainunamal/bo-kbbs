@@ -5,6 +5,10 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\User;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
+
+
 
 class AuthController extends Controller
 {
@@ -47,5 +51,39 @@ class AuthController extends Controller
         }
 
         return response(['user' => $auth, 'access_token' => $accessToken]);
+    }
+
+    public function changePassword(Request $request)
+    {
+        try {
+            $request->validate([
+                'email' => 'required|email|exists:users,email',
+                'current_password' => 'required|string',
+                'password' => 'required|string|min:8|confirmed', 
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'RC' => '1001', // Kode error untuk validasi gagal
+                'message' => 'Validation error',
+                'errors' => $e->errors()
+            ], 422); 
+        }
+    
+        $user = User::where('email', $request->email)->first();
+    
+        // if (!Hash::check($request->current_password, $user->password)) {
+        //     return response()->json([
+        //         'RC' => '1002', // Kode error untuk current password salah
+        //         'message' => 'Current password incorrect.' 
+        //     ], 400);
+        // }
+    
+        $user->password = Hash::make($request->password);
+        $user->save();
+    
+        return response()->json([
+            'RC' => '0000', // Kode sukses
+            'message' => 'Password successfully changed for user with email: ' . $request->email
+        ]);
     }
 }

@@ -50,14 +50,14 @@
 
     <tr>
         {{-- {{dd($merchant)}} --}}
-        <td>{{ $row->ID }}</td>
+        <td>{{ $row->NO }}</td>
         <td>{{ $row->CODE_MCC }}</td>
         <td>{{ $row->DESC_MCC }}</td>
         <td>
             {{-- <a class="btn btn-info" href="{{ route('merchant.show', Crypt::encrypt($row->ID)) }}">Detail</a> --}}
 
             @can('merchant-edit')
-            <a class="btn btn-warning" href="{{ route('merchant.categoriesEdit',Crypt::encrypt($row->ID)) }}">Edit</a>
+            <a class="btn btn-warning" href="{{ route('merchant.categoriesEdit',Crypt::encrypt($row->NO)) }}">Edit</a>
             @endcan
 
             {{-- <button class="btn btn-success" onclick="ceksaldo(`{{ Crypt::encrypt($row->ID) }}`)">Saldo</button> --}}

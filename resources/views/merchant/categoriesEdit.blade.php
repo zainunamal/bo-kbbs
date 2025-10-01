@@ -40,7 +40,7 @@
 
 
 
-    <form action="{{ route('merchant.categoriesUpdate', $mcc->ID) }}" method="POST">
+    <form action="{{ route('merchant.categoriesUpdate', $mcc->NO) }}" method="POST">
         @csrf
         @method('PUT')
 
@@ -49,7 +49,7 @@
                 <div class="form-group">
 
                     <input type="text" class="form-control" name="merchantType" id="merchantType" value="addMcc" hidden >
-                    <input type="text" class="form-control" name="ID" id="ID" value="{{ $mcc->ID }}" hidden >
+                    <input type="text" class="form-control" name="ID" id="ID" value="{{ $mcc->NO }}" hidden >
                  
                     <strong>Code MCC:</strong>
                     <input type="number" name="CODE_MCC" value="{{ $mcc->CODE_MCC }}" class="form-control col-3">

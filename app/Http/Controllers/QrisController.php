@@ -35,24 +35,38 @@ class QrisController extends Controller
 
         $getUserId = Auth::id();
         $userId = $getUserId;
+        $user = Auth::user(); 
+
 
         $query = DB::table('QRIS_MERCHANT')
+            ->distinct()
             ->join('user_has_merchant', 'QRIS_MERCHANT.ID', '=', 'user_has_merchant.MERCHANT_ID')
             ->join('users', 'user_has_merchant.USER_ID', '=', 'users.id')
             ->select('QRIS_MERCHANT.*');
+            // ->groupBy('QRIS_MERCHANT.ID');
 
-        if ($userId != 1) {
-            $query->where('users.id', $userId);
-        }
+        if (!$user->hasRole(['Admin', 'Superadmin'])) {
+                $query->where('users.id', $user->id);
+            }
 
         $merchant = $query->get()->toArray();
 
         // $merchant = Merchant::orderBy('ID')->get()->toArray();
 
-        // dd($merchant);
+        // dd($merchant[0]->NMID);
 
         $qrType = getQrtype();
-        return view('qris.index', compact('qrType', 'merchant'));
+
+          // Bangun path file gambar berdasarkan NMID
+          $nmid = $merchant[0]->NMID;
+          $imagePath = "/opt/vsi-scheduler-qris-acquirer/data_pten/{$nmid}_A01.png";
+  
+          // dd($imagePath);
+  
+          // Periksa apakah file gambar ada
+          $imageExists = file_exists($imagePath);
+
+        return view('qris.index', compact('qrType', 'merchant', 'imagePath', 'imageExists'));
     }
 
     public function hit(Request $request)
@@ -78,6 +92,7 @@ class QrisController extends Controller
                     "FEE_AMOUNT" =>  $request['FEE_AMOUNT'],
                     "FEE_AMOUNT_PERCENTAGE" =>  $request['FEE_AMOUNT_PERCENTAGE'],
                     "TYPE" =>  $request['TYPE'],
+                    "VA" =>  $request['VA'],
                     "EXPIRE_DATE_TIME" =>  $exp,
                 ]
             ]
@@ -98,8 +113,8 @@ class QrisController extends Controller
         ])->post(
             $customApiBaseUrl . '/api/gettoken',
             [
-                "email" => "admin@gmail.com",
-                "password" => "1234qwer"
+                "email" => "superadmin@gmail.com",
+                "password" => "uc75NKHa"
             ]
         );
         

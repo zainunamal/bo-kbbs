@@ -13,7 +13,7 @@
         <div class="container-fluid">
             <div class="row mb-2">
                 <div class="col-sm-6">
-                    <h1>List Transaction</h1>
+                    <h1>Transaction Report</h1>
                 </div>
             </div>
         </div>
@@ -22,11 +22,14 @@
     <!-- Filter and Export Buttons -->
     <div class="row mb-4">
         <div class="col-md-4">
-            <input type="text" id="date-range" class="form-control">
+            <input type="text" id="start-date" class="form-control" placeholder="Start Date">
         </div>
-        <div class="col-md-8 text-right">
+        <div class="col-md-4">
+            <input type="text" id="end-date" class="form-control" placeholder="End Date">
+        </div>
+        {{-- <div class="col-md-4 text-right">
             <button id="exportButton" class="btn btn-success">Export Data</button>
-        </div>
+        </div> --}}
     </div>
 
     <!-- modal detail -->
@@ -212,8 +215,7 @@
                     </div>
                     <div class="form-group col-12">
                         <label>Merchant PAN</label>
-                        <input type="text" class="form-control" name="MERCHANT_NAME" id="MERCHANT_NAME"
-                            value="9360052177010119420" required readonly>
+                        <input type="text" class="form-control" name="MPAN_TRX" id="MPAN_TRX" required readonly>
                     </div>
                     <div class="form-group col-12">
                         <label>Issuing Institution Name </label>
@@ -255,56 +257,25 @@
         </div>
     </div>
 
-    <!-- modal succes trx -->
-
-    <!-- HTML -->
-    {{-- <div> --}}
-    <!-- Filters -->
-    {{-- <div class="ui-bordered px-4 pt-4 mb-4">
-      <div class="form-row">
-          <div class="col-md-4 mb-3">
-              <div class="form-group">
-                  <label class="form-label">Amount</label>
-                  <input class="form-control" type="text" name="searchByAmount" id="searchByAmount">
-              </div>
-          </div>
-          <div class="col-md-4 mb-3">
-              <div class="form-group">
-                  <label class="form-label">Amount</label>
-                  <input  type="text" name="toko" id="toko">
-                  <select  class="form-control" id='searchByStatus'>
-                     <option value=''>-- Status Transfer --</option>
-                     <option value='0'>Belum Bayar</option>
-                     <option value='1'>Bayar</option>
-                     <option value='2'>Refund</option>
-                   </select>
-              </div>
-          </div>
-       		
-          <div class="col-md col-xl-2 mb-2">
-              <label class="form-label d-none d-md-block">&nbsp;</label>
-              <button type="button" class="btn btn-secondary btn-block" id="search"><i class="fa fa-search"></i> Cari</button>
-          </div>
-      </div>
-  </div> --}}
-    <!-- / Filters -->
-
 
     <div class="card-body">
         <table id="tbl_list" class="table table-striped table-bordered" cellspacing="0" width="100%">
             <thead>
                 <tr>
                     <th>NO</th>
-                    <th>TRANSACTION_ID</th>
-                    <th>MERCHANT_ID</th>
-                    <th>EXPIRE_DATE_TIME</th>
-                    <th>CREATED_AT</th>
-                    <th>FEE_AMOUNT</th>
-                    <th>STATUS_TRANSFER</th>
+                    {{-- <th>TRANSACTION_ID</th> --}}
+                    <th>MERCHANT NAME</th>
+                    {{-- <th>EXPIRE_DATE_TIME</th> --}}
+                    <th>PAID DATE</th>
+                    {{-- <th>FEE_AMOUNT</th> --}}
+                    {{-- <th>STATUS_TRANSFER</th> --}}
                     <th>RRN</th>
                     <th>AMOUNT</th>
                     <th>AMOUNT_REFUND</th>
+                    <th>AMOUNT_MDR</th>
                     <th>QR Type</th>
+                    <th>ACQUIRING_INSTITUTION_NAME</th>
+                    <th>ISSUING_CUSTOMER_NAME</th>
                     {{-- <th>SHOW</th> --}}
                     <th>STATUS</th>
                 </tr>
@@ -317,7 +288,9 @@
 @endsection
 
 @section('js')
-    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+
+
+    {{-- <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script> --}}
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.1/js/jquery.dataTables.js"></script>
     <script src="https://cdn.datatables.net/buttons/2.2.3/js/dataTables.buttons.min.js"></script>
@@ -329,6 +302,17 @@
     <script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
 
+    <script>
+        var startDateInput = document.getElementById('start-date');
+        var endDateInput = document.getElementById('end-date');
+
+        // Mengatur tanggal hari ini sebagai nilai default
+        var today = new Date().toISOString().slice(0, 10);
+        startDateInput.value = today;
+        endDateInput.value = today;
+    </script>
+
+
     <script type="text/javascript">
         $(document).ready(function() {
             var table = $('#tbl_list').DataTable({
@@ -338,7 +322,8 @@
                 ajax: {
                     url: "{{ route('transactions.data') }}",
                     data: function(d) {
-                        d.date_range = $('#date-range').val();
+                        d.start_date = $('#start-date').val();
+                        d.end_date = $('#end-date').val();
                     }
                 },
                 dom: 'Bfrtip', // Needed to show export options
@@ -346,31 +331,32 @@
                     'csv', 'excel', 'print'
                 ],
                 order: [
-                    [4, 'desc']
+                    [2, 'desc']
                 ],
                 columns: [{
                         render: function(data, type, row, meta) {
+                            console.log(row)
                             return meta.row + meta.settings._iDisplayStart + 1;
                         },
                     },
+                    // {
+                    //     data: 'TRANSACTION_ID'
+                    // },
                     {
-                        data: 'TRANSACTION_ID'
+                        data: 'MERCHANT.MERCHANT_NAME'
                     },
-                    {
-                        data: 'MERCHANT_ID'
-                    },
-                    {
-                        data: 'EXPIRE_DATE_TIME'
-                    },
+                    // {
+                    //     data: 'EXPIRE_DATE_TIME'
+                    // },
                     {
                         data: 'CREATED_AT'
                     },
-                    {
-                        data: 'FEE_AMOUNT'
-                    },
-                    {
-                        data: 'STATUS_TRANSFER'
-                    },
+                    // {
+                    //     data: 'FEE_AMOUNT'
+                    // },
+                    // {
+                    //     data: 'STATUS_TRANSFER'
+                    // },
                     {
                         data: 'RETRIEVAL_REFERENCE_NUMBER'
                     },
@@ -387,10 +373,24 @@
                         }
                     },
                     {
+                        data: 'AMOUNT_MDR',
+                        // render: function(data, type, row) {
+                        //     return new Intl.NumberFormat('id-ID').format(data);
+                        // }
+                    },
+                    {
                         data: 'QR_TYPE',
                         render: function(data, type, row, meta) {
                             return data === 11 ? 'static' : data === 12 ? 'dynamic' : '';
                         },
+                    },
+                    {
+                        data: 'NNS'
+
+                    },
+                    {
+                        data: 'ISSUING_CUSTOMER_NAME'
+
                     },
                     // {
                     //     render: function(data, type, row, meta) {
@@ -408,46 +408,55 @@
                             if (row.TRANSFER_STATUS === 3 && row.RC_FUND == 68) {
                                 return '<div class="btn-group">' +
                                     '<button class="btn btn-sm btn-danger refund-btn" onclick="refundDetail(\'' +
-                                    row.ID + '\')">' +
-                                    '<span class="spinner-border spinner-border-sm d-none"></span>' +
+                                    row.ID + '\', this)">' +
+                                    '<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>' +
                                     'Suspect</button>' +
                                     '</div>';
                             } else if (row.TRANSFER_STATUS === 3 && row.RC_FUND == 00) {
                                 return '<div class="btn-group">' +
                                     '<button class="btn btn-sm btn-success refund-btn" onclick="refundDetail(\'' +
-                                    row.ID + '\')">' +
-                                    '<span class="spinner-border spinner-border-sm d-none"></span>' +
+                                    row.ID + '\', this)">' +
+                                    '<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>' +
                                     'Refund</button>' +
                                     '</div>';
                             } else {
                                 return '<div class="btn-group">' +
                                     '<button class="btn btn-sm btn-primary detail-btn" onclick="trxDetail(\'' +
-                                    row.ID + '\')">' +
-                                    '<span class="spinner-border spinner-border-sm d-none"></span>' +
+                                    row.ID + '\', this)">' +
+                                    '<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>' +
                                     'Detail</button>' +
                                     '</div>';
                             }
                         }
                     },
+
                 ]
             });
 
-            // Inisialisasi Date Range Picker
-            $('#date-range').daterangepicker({
+            // Inisialisasi Date Picker untuk Start Date
+            $('#start-date').daterangepicker({
+                singleDatePicker: true,
                 locale: {
                     format: 'YYYY-MM-DD'
                 },
-                startDate: moment().startOf('month'),
-                endDate: moment().endOf('month')
+                autoUpdateInput: false
+            }, function(start) {
+                $('#start-date').val(start.format('YYYY-MM-DD'));
+                table.draw(); // Trigger the table redraw when the date is selected
             });
 
-            $('#date-range').on('apply.daterangepicker', function(ev, picker) {
-                table.draw();
+            // Inisialisasi Date Picker untuk End Date
+            $('#end-date').daterangepicker({
+                singleDatePicker: true,
+                locale: {
+                    format: 'YYYY-MM-DD'
+                },
+                autoUpdateInput: false
+            }, function(end) {
+                $('#end-date').val(end.format('YYYY-MM-DD'));
+                table.draw(); // Trigger the table redraw when the date is selected
             });
 
-            $('#exportButton').on('click', function() {
-                table.button('.buttons-excel').trigger();
-            });
         });
 
         function formatNumberWithThousandSeparator(number) {
@@ -462,6 +471,8 @@
 
             var url = "{{ route('transactions.detail', ':id') }}";
             url = url.replace(':id', id);
+
+            console.log(url)
 
             fetch(url)
                 .then(response => response.json())
@@ -490,6 +501,10 @@
         }
 
         function trxDetail(id) {
+            var button = event.target;
+            button.disabled = true;
+            var spinner = button.querySelector('.spinner-border');
+            spinner.classList.remove('d-none');
             var url = "{{ route('transactions.detail', ':id') }}";
             url = url.replace(':id', id);
 
@@ -498,7 +513,7 @@
                 .then(data => {
 
                     let time = data.bit_12.substring(0, 2) + ':' + data.bit_12.substring(2, 4) + ':' + data.bit_12
-                        .substring(4, 6) + ' ' + data.UPDATED_AT.substring(0, 10);
+                        .substring(4, 6) + ' ' + data.PAID_AT.substring(0, 10);
                     $('#trxModal').modal('show');
                     $('#ID').val(data.ID);
                     $('#CREATED_AT_TRX').val(data.CREATED_AT);
@@ -525,8 +540,14 @@
                     } else {
                         $('#STATUS_TRANSACTION_TRX').val('Refund');
                     }
+                    spinner.classList.add('d-none');
+                    button.disabled = false;
                 })
-                .catch(error => console.error(error));
+                .catch(error => {
+                    spinner.classList.add('d-none');
+                    button.disabled = false;
+                    console.error(error);
+                });
         }
 
         function refundDetail(id) {
@@ -571,8 +592,16 @@
                     } else {
                         $('#STATUS_TRANSACTION_RF').val('Refund');
                     }
+                    spinner.classList.add('d-none');
+                    button.disabled = false;
                 })
-                .catch(error => console.error(error));
+                .catch(error => {
+                    spinner.classList.add('d-none');
+                    button.disabled = false;
+                    console.error(error);
+                });
         }
     </script>
+
+
 @endsection

@@ -1,13 +1,13 @@
 <?php
-    
+
 namespace App\Http\Controllers;
-    
+
 use App\Models\Permission;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
-    
+
 class PermissionController extends Controller
-{ 
+{
     /**
      * Display a listing of the resource.
      *
@@ -15,23 +15,29 @@ class PermissionController extends Controller
      */
     function __construct()
     {
-         $this->middleware('permission:permission-list|permission-create|permission-edit|permission-delete', ['only' => ['index','show']]);
-         $this->middleware('permission:permission-create', ['only' => ['create','store']]);
-         $this->middleware('permission:permission-edit', ['only' => ['edit','update']]);
-         $this->middleware('permission:permission-delete', ['only' => ['destroy']]);
+        $this->middleware('permission:permission-list|permission-create|permission-edit|permission-delete', ['only' => ['index', 'show']]);
+        $this->middleware('permission:permission-create', ['only' => ['create', 'store']]);
+        $this->middleware('permission:permission-edit', ['only' => ['edit', 'update']]);
+        $this->middleware('permission:permission-delete', ['only' => ['destroy']]);
     }
     /**
      * Display a listing of the resource.
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
-        $permissions = Permission::latest()->paginate(5);
-        return view('permissions.index',compact('permissions'))
+        // $permissions = Permission::latest()->paginate(5);
+        $search = $request->search;
+        $sql = Permission::latest();
+        if ($search != '') {
+            $sql->where('name', 'like', '%' . $search . '%');
+        }
+        $permissions = $sql->paginate(5);
+        return view('permissions.index', compact('permissions'))
             ->with('i', (request()->input('page', 1) - 1) * 5);
     }
-    
+
     /**
      * Show the form for creating a new resource.
      *
@@ -41,7 +47,7 @@ class PermissionController extends Controller
     {
         return view('permissions.create');
     }
-    
+
     /**
      * Store a newly created resource in storage.
      *
@@ -53,15 +59,15 @@ class PermissionController extends Controller
         request()->validate([
             'name' => 'required',
             'guard_name' => 'required',
-            
+
         ]);
-       
+
         Permission::create($request->all());
-        
+
         return redirect()->route('permissions.index')
-                        ->with('success','Permission created successfully.');
+            ->with('success', 'Permission created successfully.');
     }
-    
+
     /**
      * Display the specified resource.
      *
@@ -72,9 +78,9 @@ class PermissionController extends Controller
     {
         $id = Crypt::decrypt($id);
         $permission = Permission::where('id', $id)->first();
-        return view('permissions.show',compact('permission'));
+        return view('permissions.show', compact('permission'));
     }
-    
+
     /**
      * Show the form for editing the specified resource.
      *
@@ -85,9 +91,9 @@ class PermissionController extends Controller
     {
         $id = Crypt::decrypt($id);
         $permission = Permission::where('id', $id)->first();
-        return view('permissions.edit',compact('permission'));
+        return view('permissions.edit', compact('permission'));
     }
-    
+
     /**
      * Update the specified resource in storage.
      *
@@ -97,16 +103,16 @@ class PermissionController extends Controller
      */
     public function update(Request $request, Permission $permission)
     {
-         request()->validate([
+        request()->validate([
             'name' => 'required',
         ]);
-    
+
         $permission->update($request->all());
-    
+
         return redirect()->route('permissions.index')
-                        ->with('success','Product updated successfully');
+            ->with('success', 'Product updated successfully');
     }
-    
+
     /**
      * Remove the specified resource from storage.
      *
@@ -116,8 +122,8 @@ class PermissionController extends Controller
     public function destroy(Permission $permission)
     {
         $permission->delete();
-    
+
         return redirect()->route('permissions.index')
-                        ->with('success','Product deleted successfully');
+            ->with('success', 'Product deleted successfully');
     }
 }

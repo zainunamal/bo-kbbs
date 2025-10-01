@@ -44,6 +44,8 @@ class QrisController extends Controller
             'MPI' => $mpi,
         ];
 
+        // dd($data);
+
         // Load background image
         $backgroundImage = Image::make('images/gpnPolos.jpg');
         // Resize background image to match canvas size
@@ -162,7 +164,7 @@ class QrisController extends Controller
 
 
                 // Save the canvas as PNG
-                $canvas->save('images/hasil.png');
+                $canvas->save('hasil.png');
 
                 // Encode the canvas as base64 if needed
                 $base64 = base64_encode($canvas);

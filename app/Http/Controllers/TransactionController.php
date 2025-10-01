@@ -13,6 +13,8 @@ use App\Models\Nns;
 // use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon; // Library untuk manipulasi tanggal
+
 
 class TransactionController extends Controller
 {
@@ -41,6 +43,9 @@ class TransactionController extends Controller
 
     public function index()
     {
+
+        $today = Carbon::today()->toDateString();
+
         // $data = Http::get('http://192.168.26.26:10002/tm.php')->json();
 
         // foreach ($data as $key => $value) {
@@ -58,114 +63,125 @@ class TransactionController extends Controller
         // }
 
         // dd($data);
-        return view('transactions.index');
+        return view('transactions.index', ['startDate' => $today, 'endDate' => $today]);
     }
 
     public function data(Request $request)
     {
 
-
-
-
         if ($request->ajax()) {
 
-            $dateRange = $request->date_range; // Format: 'YYYY-MM-DD - YYYY-MM-DD'
-            $startDate = null;
-            $endDate = null;
+            $startDate = $request->input('start_date');
+            $endDate = $request->input('end_date');
 
-            if (!empty($dateRange)) {
-                $dates = explode(' - ', $dateRange);
-                if (count($dates) == 2) {
-                    $startDate = trim($dates[0]);
-                    $endDate = trim($dates[1]) . ' 23:59:59'; // Tambahkan waktu di akhir hari untuk inklusi penuh
-                }
+            // Menambahkan format tanggal untuk memastikan inklusi penuh hari terakhir
+            if (!empty($startDate) && !empty($endDate)) {
+                $startDate = trim($startDate);
+                $endDate = Carbon::createFromFormat('Y-m-d', trim($endDate))->endOfDay()->toDateTimeString();
             }
+
 
             switch (env('APP_ENV')) {
                 case 'local':
 
-                    $data = Http::get('http://192.168.26.26:10002/tm.php')->json();
+                    $userId = Auth::id();
+                    $user = Auth::user();
 
+                    // Retrieve data from the database based on user access to merchants
+                    $query = DB::table('QRIS_TRANSACTION_AQUERIER_MAIN')
+                        ->distinct()
+                        ->join('user_has_merchant', 'QRIS_TRANSACTION_AQUERIER_MAIN.MERCHANT_ID', '=', 'user_has_merchant.MERCHANT_ID')
+                        ->join('users', 'user_has_merchant.USER_ID', '=', 'users.id')
+                        ->select('QRIS_TRANSACTION_AQUERIER_MAIN.*')
+                        ->whereBetween('QRIS_TRANSACTION_AQUERIER_MAIN.created_at', [$startDate, $endDate]);
+
+                    // if ($userId != 1) { // Filter data for non-admin users
+                    //     $query->where('users.id', $userId);
+                    // }
+
+                    if (!$user->hasRole(['Admin', 'Superadmin'])) {
+                        $query->where('users.id', $userId);
+                    }
+
+                    $data = $query->get()->map(function ($item) {
+                        // Convert each item to an array if necessary, depending on how you need to process it
+                        return (array) $item;
+                    })->toArray();
+
+                    // Add additional processing if needed (e.g., enriching data with other details from the database)
                     foreach ($data as $key => $value) {
                         $merchant = Merchant::where('ID', $value['MERCHANT_ID'])->first();
-                        if ($merchant != '') {
-                            $data[$key]['MERCHANT'] = $merchant->toArray();
+                        $data[$key]['MERCHANT'] = $merchant ? $merchant->toArray() : null;
+
+                        $nns = Nns::where('NNS', $value['ISSUING_INSTITUTION_NAME'])->first();
+                        if ($nns) {
+                            $data[$key]['NNS'] = $nns['NAME'];
                         } else {
-                            $data[$key]['MERCHANT'] = $merchant;
+                            $data[$key]['NNS'] = null;
                         }
                     }
-
-                    // Filter data berdasarkan rentang tanggal
-                    if ($startDate && $endDate) {
-                        $data = array_filter($data, function ($item) use ($startDate, $endDate) {
-                            $createdAt = $item['CREATED_AT'] ?? null;
-                            return $createdAt >= $startDate && $createdAt <= $endDate;
-                        });
-                    } else {
-                        $data = $data;
-                    }
-
-                    // dd($filteredData);
-
                     break;
 
                 case 'dev':
                     $data = Http::get('http://192.168.26.26:10002/tm.php')->json();
 
                     foreach ($data as $key => $value) {
-
                         $merchant = Merchant::where('ID', $value['MERCHANT_ID'])->first();
-                        if ($merchant != '') {
-                            // dd($merchant);
-                            $data[$key]['MERCHANT'] = $merchant->toArray();
+                        $data[$key]['MERCHANT'] = $merchant ? $merchant->toArray() : null;
+                        $nns = Nns::where('NNS', $value['ISSUING_INSTITUTION_NAME'])->first();
+                        // dd($nns->toArray());
+                        if ($nns != '') {
+                            // dd($nns);
+                            // dd($data[$key]['NNS']['NAME']);
+                            $data[$key]['NNS'] = $nns['NAME'];
                         } else {
-                            $data[$key]['MERCHANT'] = $merchant;
+                            $data[$key]['NNS'] = $nns;
                         }
                     }
-                    break;
-                case 'prod':
-                    $getUserId = Auth::id();
-                    $userId = $getUserId;
 
+                    break;
+
+                case 'prod':
+                    $userId = Auth::id();
+                    $user = Auth::user();
+
+
+                    // Retrieve data from the database based on user access to merchants
                     $query = DB::table('QRIS_TRANSACTION_AQUERIER_MAIN')
+                        ->distinct()
                         ->join('user_has_merchant', 'QRIS_TRANSACTION_AQUERIER_MAIN.MERCHANT_ID', '=', 'user_has_merchant.MERCHANT_ID')
                         ->join('users', 'user_has_merchant.USER_ID', '=', 'users.id')
-                        ->select('QRIS_TRANSACTION_AQUERIER_MAIN.*');
+                        ->select('QRIS_TRANSACTION_AQUERIER_MAIN.*')
+                        ->whereBetween('QRIS_TRANSACTION_AQUERIER_MAIN.created_at', [$startDate, $endDate]);
 
-                    if ($userId != 1) {
+                    if (!$user->hasRole(['Admin', 'Superadmin'])) {
                         $query->where('users.id', $userId);
                     }
 
-                    // dd($query->get()->toArray());
+                    $data = $query->get()->map(function ($item) {
+                        return (array) $item;
+                    })->toArray();
 
-                    $data = $query->get()->toArray();
+                    // Add additional processing if needed (e.g., enriching data with other details from the database)
+                    foreach ($data as $key => $value) {
+                        $merchant = Merchant::where('ID', $value['MERCHANT_ID'])->first();
+                        $data[$key]['MERCHANT'] = $merchant ? $merchant->toArray() : null;
+
+                        $nns = Nns::where('NNS', $value['ISSUING_INSTITUTION_NAME'])->first();
+                        if ($nns) {
+                            $data[$key]['NNS'] = $nns['NAME'];
+                        } else {
+                            $data[$key]['NNS'] = null;
+                        }
+                    }
                     break;
             }
 
-
-
-
-            // $data = Transaction::get()->toArray();
-
-
-
-
-
-
-            // $data = Http::get('http://192.168.26.26:10002/tm.php')->json();
-
-            // foreach ($data as $key => $value) {
-
-            //     $merchant = Merchant::where('ID',$value['MERCHANT_ID'])->first();
-            //     if ($merchant != '') {
-            //         // dd($merchant);
-            //         $data[$key]['MERCHANT'] = $merchant->toArray();
-            //     } else {
-            //         $data[$key]['MERCHANT'] = $merchant;
-            //     }
-
-
-
+            // if ($startDate && $endDate) {
+            //     $data = array_filter($data, function ($item) use ($startDate, $endDate) {
+            //         $createdAt = $item['CREATED_AT'] ?? null;
+            //         return $createdAt >= $startDate && $createdAt <= $endDate;
+            //     });
             // }
 
 
@@ -204,13 +220,13 @@ class TransactionController extends Controller
 
         switch (env('APP_ENV')) {
             case 'local':
-                $datas = Http::get('http://192.168.26.26:10002/tm.php')->json();
+                $datas = Transaction::where('ID',$idString)->get()->toArray();
                 break;
             case 'dev':
                 $datas = Http::get('http://192.168.26.26:10002/tm.php')->json();
                 break;
             case 'prod':
-                $datas = Transaction::get()->toArray();
+                $datas = Transaction::where('ID',$idString)->get()->toArray();
                 break;
         }
 
@@ -257,6 +273,9 @@ class TransactionController extends Controller
 
             if ($data['ID'] == $idString) {
 
+                $data['AMOUNT_MDR'] = '';
+                $data['PAID_AT'] = '';
+
                 return response()->json([
 
                     'MERCHANT_ACC_NUMBER'           =>   $data['MERCHANT_ACC_NUMBER'],
@@ -296,6 +315,8 @@ class TransactionController extends Controller
                     'BIT_2'                  =>   $data['BIT_2'],
                     'CURRENT_AMOUNT_REFUND'                  =>   $data['CURRENT_AMOUNT_REFUND'],
                     'MPAN'                  =>   $data['MPAN'],
+                    'AMOUNT_MDR'            => $data['AMOUNT_MDR'],
+                    'PAID_AT'                  =>   $data['PAID_AT'],
 
                 ]);
             }

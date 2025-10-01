@@ -10,6 +10,14 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
 @stop
 
+<style>
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        padding-left: 0 !important;  
+        height: auto !important;     
+        margin-top: -7px !important;  
+    }
+        
+    </style>
 
 
 @section('content')
@@ -117,7 +125,7 @@
                                     @if (is_int($dropdown['AMOUNT']) && $dropdown['AMOUNT'] > 0)
                                         <input type="number" id="AMOUNT" name="AMOUNT" class="form-control" required>
                                     @else
-                                        <p> Input Amount Tidak Boleh Lebig Dari Transaction Amount </p>
+                                        <input type="number" id="AMOUNT" name="AMOUNT" class="form-control" required>
                                     @endif
                                 @break
                             @endforeach

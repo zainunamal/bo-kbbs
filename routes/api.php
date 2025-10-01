@@ -51,6 +51,10 @@ Route::group(['middleware' => ['cors']], function () {
         Route::post('/refund/hit', 'API\client\RefundClientController@get')->name('api.refund.hit');  
         Route::post('/transaction/get', 'API\client\TransactionClientController@index')->name('api.transaction.get');  
         
+
+        Route::middleware('auth:api')->post('password/change', 'API\AuthController@changePassword');
+
+        
     });
 
 });

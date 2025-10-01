@@ -36,7 +36,7 @@
                             height="{{ config('adminlte.auth_logo.img.height') }}"
                          @endif>
                 @else
-                    <img src="{{ asset(config('adminlte.logo_img')) }}"
+                    <img src="{{ asset(config('adminlte.logo_img_xl')) }}"
                          alt="{{ config('adminlte.logo_img_alt') }}" height="50">
                 @endif
 
