@@ -57,27 +57,27 @@ class MerchantController extends Controller
 
         $search = $request->input('search');
 
-        $query = DB::table('VSI_SWITCHER_VIOSS_BSB.QRIS_MERCHANT')
+        $query = DB::table('QRIS_MERCHANT')
             ->whereIn('STATUS', [0, 1])
-            ->select('VSI_SWITCHER_VIOSS_BSB.QRIS_MERCHANT.*');
+            ->select('QRIS_MERCHANT.*');
 
         if ($user->hasRole('Merchant')) {
-            // $query->join('user_has_merchant', 'VSI_SWITCHER_VIOSS_BSB.QRIS_MERCHANT.ID', '=', 'user_has_merchant.MERCHANT_ID');
+            // $query->join('user_has_merchant', 'QRIS_MERCHANT.ID', '=', 'user_has_merchant.MERCHANT_ID');
             // $query->join('users', 'user_has_merchant.USER_ID', '=', 'users.id');
             // $query->whereIn('users.id', $user->id);
-            $query->whereIn('VSI_SWITCHER_VIOSS_BSB.QRIS_MERCHANT.ID', $user->merchants()->pluck('VSI_SWITCHER_VIOSS_BSB.QRIS_MERCHANT.ID')->toArray());
+            $query->whereIn('QRIS_MERCHANT.ID', $user->merchants()->pluck('QRIS_MERCHANT.ID')->toArray());
         } elseif ($user->hasRole('KC')) {
-            $query->where('VSI_SWITCHER_VIOSS_BSB.QRIS_MERCHANT.KODE_CABANG', $authCabangId);
+            $query->where('QRIS_MERCHANT.KODE_CABANG', $authCabangId);
         } elseif ($user->hasRole('KCP')) {
-            $query->where('VSI_SWITCHER_VIOSS_BSB.QRIS_MERCHANT.KODE_CABANG', $authCabangId);
-            $query->where('VSI_SWITCHER_VIOSS_BSB.QRIS_MERCHANT.KODE_LOKASI', $authCabangLokasi);
+            $query->where('QRIS_MERCHANT.KODE_CABANG', $authCabangId);
+            $query->where('QRIS_MERCHANT.KODE_LOKASI', $authCabangLokasi);
         }
 
         if ($search) {
-            $query->where('VSI_SWITCHER_VIOSS_BSB.QRIS_MERCHANT.MERCHANT_NAME', 'like', '%' . $search . '%');
+            $query->where('QRIS_MERCHANT.MERCHANT_NAME', 'like', '%' . $search . '%');
         }
 
-        // $query->groupBy('VSI_SWITCHER_VIOSS_BSB.QRIS_MERCHANT.ID');
+        // $query->groupBy('QRIS_MERCHANT.ID');
 
         $merchants = $query->paginate(10);
 

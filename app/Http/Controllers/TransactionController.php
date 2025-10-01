@@ -85,12 +85,12 @@ class TransactionController extends Controller
                     $user = Auth::user();
 
                     // Retrieve data from the database based on user access to merchants
-                    $query = DB::table('VSI_SWITCHER_VIOSS_BSB.QRIS_TRANSACTION_AQUERIER_MAIN')
+                    $query = DB::table('QRIS_TRANSACTION_AQUERIER_MAIN')
                         ->distinct()
-                        ->join('user_has_merchant', 'VSI_SWITCHER_VIOSS_BSB.QRIS_TRANSACTION_AQUERIER_MAIN.MERCHANT_ID', '=', 'user_has_merchant.MERCHANT_ID')
+                        ->join('user_has_merchant', 'QRIS_TRANSACTION_AQUERIER_MAIN.MERCHANT_ID', '=', 'user_has_merchant.MERCHANT_ID')
                         ->join('users', 'user_has_merchant.USER_ID', '=', 'users.id')
-                        ->select('VSI_SWITCHER_VIOSS_BSB.QRIS_TRANSACTION_AQUERIER_MAIN.*')
-                        ->whereBetween('VSI_SWITCHER_VIOSS_BSB.QRIS_TRANSACTION_AQUERIER_MAIN.created_at', [$startDate, $endDate]);
+                        ->select('QRIS_TRANSACTION_AQUERIER_MAIN.*')
+                        ->whereBetween('QRIS_TRANSACTION_AQUERIER_MAIN.created_at', [$startDate, $endDate]);
 
                     // if ($userId != 1) { // Filter data for non-admin users
                     //     $query->where('users.id', $userId);
@@ -120,16 +120,17 @@ class TransactionController extends Controller
                     break;
 
                 case 'dev':
+                case 'prod':
                     $user = Auth::user();
 
                     // Retrieve data from the database based on user access to merchants
-                    $query = DB::table('VSI_SWITCHER_VIOSS_BSB.QRIS_TRANSACTION_AQUERIER_MAIN')
+                    $query = DB::table('QRIS_TRANSACTION_AQUERIER_MAIN')
                         ->distinct()
-                        ->join('VSI_SWITCHER_VIOSS_BSB.QRIS_MERCHANT', 'QRIS_TRANSACTION_AQUERIER_MAIN.MERCHANT_ID', '=', 'QRIS_MERCHANT.ID')
-                        // ->join('user_has_merchant', 'VSI_SWITCHER_VIOSS_BSB.QRIS_TRANSACTION_AQUERIER_MAIN.MERCHANT_ID', '=', 'user_has_merchant.MERCHANT_ID')
+                        ->join('QRIS_MERCHANT', 'QRIS_TRANSACTION_AQUERIER_MAIN.MERCHANT_ID', '=', 'QRIS_MERCHANT.ID')
+                        // ->join('user_has_merchant', 'QRIS_TRANSACTION_AQUERIER_MAIN.MERCHANT_ID', '=', 'user_has_merchant.MERCHANT_ID')
                         // ->join('users', 'user_has_merchant.USER_ID', '=', 'users.id')
-                        ->select('VSI_SWITCHER_VIOSS_BSB.QRIS_TRANSACTION_AQUERIER_MAIN.*')
-                        ->whereBetween('VSI_SWITCHER_VIOSS_BSB.QRIS_TRANSACTION_AQUERIER_MAIN.created_at', [$startDate, $endDate]);
+                        ->select('QRIS_TRANSACTION_AQUERIER_MAIN.*')
+                        ->whereBetween('QRIS_TRANSACTION_AQUERIER_MAIN.created_at', [$startDate, $endDate]);
 
                     if ($user->hasRole('Merchant')) {
                         $query->where('QRIS_TRANSACTION_AQUERIER_MAIN.MERCHANT_ID', $merchant->ID);
@@ -175,39 +176,39 @@ class TransactionController extends Controller
 
                 // break;
 
-                case 'prod':
-                    $userId = Auth::id();
-                    $user = Auth::user();
+                // case 'prod':
+                //     $userId = Auth::id();
+                //     $user = Auth::user();
 
-                    // Retrieve data from the database based on user access to merchants
-                    $query = DB::table('QRIS_TRANSACTION_AQUERIER_MAIN')
-                        ->distinct()
-                        ->join('user_has_merchant', 'QRIS_TRANSACTION_AQUERIER_MAIN.MERCHANT_ID', '=', 'user_has_merchant.MERCHANT_ID')
-                        ->join('users', 'user_has_merchant.USER_ID', '=', 'users.id')
-                        ->select('QRIS_TRANSACTION_AQUERIER_MAIN.*')
-                        ->whereBetween('QRIS_TRANSACTION_AQUERIER_MAIN.created_at', [$startDate, $endDate]);
+                //     // Retrieve data from the database based on user access to merchants
+                //     $query = DB::table('QRIS_TRANSACTION_AQUERIER_MAIN')
+                //         ->distinct()
+                //         ->join('user_has_merchant', 'QRIS_TRANSACTION_AQUERIER_MAIN.MERCHANT_ID', '=', 'user_has_merchant.MERCHANT_ID')
+                //         ->join('users', 'user_has_merchant.USER_ID', '=', 'users.id')
+                //         ->select('QRIS_TRANSACTION_AQUERIER_MAIN.*')
+                //         ->whereBetween('QRIS_TRANSACTION_AQUERIER_MAIN.created_at', [$startDate, $endDate]);
 
-                    if (!$user->hasRole(['Admin', 'Superadmin'])) {
-                        $query->where('users.id', $userId);
-                    }
+                //     if (!$user->hasRole(['Admin', 'Superadmin'])) {
+                //         $query->where('users.id', $userId);
+                //     }
 
-                    $data = $query->get()->map(function ($item) {
-                        return (array) $item;
-                    })->toArray();
+                //     $data = $query->get()->map(function ($item) {
+                //         return (array) $item;
+                //     })->toArray();
 
-                    // Add additional processing if needed (e.g., enriching data with other details from the database)
-                    foreach ($data as $key => $value) {
-                        $merchant = Merchant::where('ID', $value['MERCHANT_ID'])->first();
-                        $data[$key]['MERCHANT'] = $merchant ? $merchant->toArray() : null;
+                //     // Add additional processing if needed (e.g., enriching data with other details from the database)
+                //     foreach ($data as $key => $value) {
+                //         $merchant = Merchant::where('ID', $value['MERCHANT_ID'])->first();
+                //         $data[$key]['MERCHANT'] = $merchant ? $merchant->toArray() : null;
 
-                        $nns = Nns::where('NNS', $value['ISSUING_INSTITUTION_NAME'])->first();
-                        if ($nns) {
-                            $data[$key]['NNS'] = $nns['NAME'];
-                        } else {
-                            $data[$key]['NNS'] = null;
-                        }
-                    }
-                    break;
+                //         $nns = Nns::where('NNS', $value['ISSUING_INSTITUTION_NAME'])->first();
+                //         if ($nns) {
+                //             $data[$key]['NNS'] = $nns['NAME'];
+                //         } else {
+                //             $data[$key]['NNS'] = null;
+                //         }
+                //     }
+                //     break;
             }
 
             // if ($startDate && $endDate) {

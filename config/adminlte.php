@@ -65,13 +65,11 @@ return [
 
     // 'logo' => '<b>QRIS Merchant KBBS</b>',
     'logo' => '',
-    // 'logo_img' => 'vendor/adminlte/dist/img/LOGO-KB-BUKOPIN-SYARIAH-XS.png',
-    'logo_img' => '',
+    'logo_img' => 'vendor/adminlte/dist/img/LOGO-KB-BUKOPIN-SYARIAH-XS.png',
     'logo_img_class' => 'brand-image img-circle elevation-3',
-    'logo_img_xl' => '',
-    // 'logo_img_xl' => 'vendor/adminlte/dist/img/LOGO-KB-BUKOPIN-SYARIAH.png',
+    'logo_img_xl' => 'vendor/adminlte/dist/img/LOGO-KB-BUKOPIN-SYARIAH.png',
     'logo_img_xl_class' => 'brand-image-xs',
-    'logo_img_alt' => '',
+    'logo_img_alt' => 'KBBS',
 
     /*
     |--------------------------------------------------------------------------
@@ -301,7 +299,7 @@ return [
         // ],
         [
             'type' => 'fullscreen-widget',
-            'topnav_right' => false,
+            'topnav_right' => true,
         ],
 
         // Sidebar items:
@@ -383,6 +381,7 @@ return [
         [
             'text' => 'User Management',
             'icon' => 'far fa-fw fa-user',
+            'can' => 'user-create',
             'submenu' => [
                 [
                     'text' => 'Manage Users',

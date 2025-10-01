@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class MerchantDetails extends Model
 {
     // protected $connection = 'mysql2';
-    protected $table = 'VSI_SWITCHER_VIOSS_BSB.QRIS_MERCHANT_DETAILS';
+    protected $table = 'QRIS_MERCHANT_DETAILS';
     protected $primaryKey = 'ID';
     public $timestamps = false;
 
